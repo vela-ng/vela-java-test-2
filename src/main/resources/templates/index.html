@@ -118,7 +118,7 @@
                     clone.prependTo(parent);
                 },
                 "error": function(error){
-                    alert("error");
+                    alert(error.responseJSON.message);
                 }
             });
         })
