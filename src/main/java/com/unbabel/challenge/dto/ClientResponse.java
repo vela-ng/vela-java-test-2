@@ -7,6 +7,6 @@ public class ClientResponse {
     private String fromLanguage;
     private String originalText;
     private String toLanguage;
-    private String translatedTo;
+    private String translatedText;
     private String status;
 }
