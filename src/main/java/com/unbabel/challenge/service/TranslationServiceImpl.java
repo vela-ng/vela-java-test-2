@@ -3,10 +3,15 @@ package com.unbabel.challenge.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unbabel.challenge.dto.ClientRequest;
 import com.unbabel.challenge.dto.ClientResponse;
+import com.unbabel.challenge.dto.UnBabelRequest;
 import com.unbabel.challenge.dto.UnBabelResponse;
+import org.apache.commons.lang.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,6 +21,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Service
 public class TranslationServiceImpl implements TranslationService {
     @Autowired
     RestTemplate restTemplate;
@@ -23,8 +29,13 @@ public class TranslationServiceImpl implements TranslationService {
     @Value("${unbabel.apikey}")
     private String apikey;
 
+    @Value("${unbabel.username}")
+    private String username;
+
     @Value("${unbabel.url}")
     private String unbabelUrl;
+
+    private Logger log = LoggerFactory.getLogger(TranslationServiceImpl.class);
 
     public static String asJsonString(final Object obj) {
         try {
@@ -63,15 +74,29 @@ public class TranslationServiceImpl implements TranslationService {
         Map<String,Object> headersMap = Collections.unmodifiableMap(
                 Stream.of(
                         new AbstractMap.SimpleEntry<>("Authorization", "ApiKey"),
-                        new AbstractMap.SimpleEntry<>("username", apikey),
+                        new AbstractMap.SimpleEntry<>(username, apikey),
                         new AbstractMap.SimpleEntry<>("Accept", "application/json")
                 ).collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue)));
 
         return headersMap;
     }
 
+    private ClientResponse getMockClientResponse(UnBabelRequest unBabelRequest){
+
+        ClientResponse clientResponse = new ClientResponse();
+        clientResponse.setOriginalText(unBabelRequest.getText());
+        clientResponse.setTranslatedText(RandomStringUtils.randomAlphabetic(
+                unBabelRequest.getText().length()
+        ));
+        clientResponse.setStatus("Completed");
+        clientResponse.setFromLanguage(unBabelRequest.getSourceLanguage());
+        clientResponse.setToLanguage(unBabelRequest.getTargetLanguage());
+
+        return clientResponse;
+    }
+
     @Override
-    public ClientResponse translate(ClientRequest clientRequest) {
+    public ClientResponse translate(UnBabelRequest clientRequest) {
 
         UnBabelResponse ApiResponse = new UnBabelResponse();
         ResponseEntity<UnBabelResponse> response = null;
@@ -85,8 +110,9 @@ public class TranslationServiceImpl implements TranslationService {
                     HttpMethod.POST, httpEntity, UnBabelResponse.class);
 
             ApiResponse = response.getBody();
-        } catch (HttpStatusCodeException exception){
-            throw exception;
+        } catch (Exception exception){
+            log.warn(exception.getMessage());
+            return getMockClientResponse(clientRequest);
         }
 
         if (null == ApiResponse){
@@ -119,5 +145,16 @@ public class TranslationServiceImpl implements TranslationService {
         }
 
         return convertToClientResponse(ApiResponse);
+    }
+
+    @Override
+    public UnBabelRequest convertToUnBabelRequest(ClientRequest clientRequest) {
+        UnBabelRequest unBabelRequest = new UnBabelRequest();
+        unBabelRequest.setSourceLanguage("en");
+        unBabelRequest.setTargetLanguage(clientRequest.getTranslateTo());
+        unBabelRequest.setText(clientRequest.getTextToTranslate());
+        unBabelRequest.setTextFormat("text");
+
+        return unBabelRequest;
     }
 }

@@ -22,14 +22,108 @@
         <h2 th:text="'Hello ' + ${company}"></h2>
     </div>
 
-    <div>
-        <h3>List of random messages:</h3>
-        <!-- Simple for loop in thymeleaf -->
-        <ul th:each="message : ${messages}">
-            <li th:text="${message.getMsg()}"></li>
-        </ul>
+<!--    <div>-->
+<!--        <h3>List of random messages:</h3>-->
+<!--        &lt;!&ndash; Simple for loop in thymeleaf &ndash;&gt;-->
+<!--        <ul th:each="message : ${messages}">-->
+<!--            <li th:text="${message.getMsg()}"></li>-->
+<!--        </ul>-->
+<!--    </div>-->
+
+    <div class="form-div">
+        <div class="col-md-4"></div>
+        <form class="col-md-6" id="translate">
+            <div class="form-group">
+                <label for="inputText"> English text to translate</label>
+                <input type="text" class="form-control" id="inputText" placeholder="Hello World">
+            </div>
+
+            <div class="form-row">
+
+                <div class="form-group col-md-12">
+                    <label for="inputState">Choose Translate Language</label>
+                    <select id="inputState" class="form-control">
+                        <option selected>Choose...</option>
+                        <option th:each="language : ${languages}" th:value="${language.getCode()}" th:text="${language.getName()}"></option>
+                    </select>
+                </div>
+
+            </div>
+
+            <button type="submit" class="btn btn-primary">Translate</button>
+        </form>
+        <div class="col-md-4"></div>
+    </div>
+    <br/>
+    <h3>Translations</h3>
+    <div class="table-div">
+        <table class="table">
+            <thead>
+            <tr>
+<!--                <th scope="col">#</th>-->
+                <th scope="col">From Language</th>
+                <th scope="col">Original Text</th>
+                <th scope="col">To Language</th>
+                <th scope="col">Translated Text</th>
+                <th scope="col">Status</th>
+            </tr>
+            </thead>
+            <tbody class="body">
+                <tr class="clone hide">
+<!--                    <th class="count" scope="row">0</th>-->
+                    <td class="from">From</td>
+                    <td class="text">text</td>
+                    <td class="to">To</td>
+                    <td class="trans">Translate</td>
+                    <td class="status">Status</td>
+                </tr>
+
+            </tbody>
+        </table>
     </div>
 </div>
 
+
+<script>
+    $(document).ready(function () {
+        $(".hide").hide();
+        $(".show").show();
+        $("#translate").submit(function (e) {
+            // alert($("#inputText").val() + " and " + $("#inputState").val());
+            // alert("submitted")
+            e.preventDefault();
+            var request = {
+                "textToTranslate": $("#inputText").val(),
+                "translateTo": $("#inputState").val()
+            };
+            $("#inputText").val("");
+            $("#inputState").val("");
+
+            $.ajax({
+                "url": "http://localhost:8080/translate",
+                "contentType": "application/json; charset=utf-8",
+                "type": "POST",
+                "data": JSON.stringify(request),
+                "success": function (response) {
+                    console.log(response);
+                    var parent = $(".body");
+                    var clone = parent.find(".clone").clone();
+                    clone.find(".from").text(response.fromLanguage);
+                    clone.find(".text").text(response.originalText);
+                    clone.find(".to").text(response.toLanguage);
+                    clone.find(".trans").text(response.translatedText);
+                    clone.find(".status").text(response.status);
+                    clone.removeClass("hide");
+                    clone.show();
+                    clone.prependTo(parent);
+                },
+                "error": function(error){
+                    alert("error");
+                }
+            });
+        })
+    });
+
+</script>
 </body>
 </html>

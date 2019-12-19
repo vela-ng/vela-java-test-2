@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 @Service
 @ConfigurationProperties(prefix = "unbabel")
 public class ApiKey {
+    private String username;
     private String url;
     private String apiKey;
 }
